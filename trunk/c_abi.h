@@ -28,7 +28,15 @@ typedef void Minefield;
 
 /** @brief Create minefield of given size.  Clean up with mines_close() later!
  */
-Minefield *mines_init(int rows, int cols, int mines, int intelligence);
+Minefield *mines_init(int rows, int cols, int mines);
+
+/** @brief Maximum intelligence level implemented by current version
+ */
+int mines_max_intelligence(void);
+
+/** @brief Set intelligence level of game's "autocompletion"
+ */
+void mines_set_intelligence(Minefield *, int);
 
 /** @brief Clean up minefield created with mines_init()
  */

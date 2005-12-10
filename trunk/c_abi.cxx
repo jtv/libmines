@@ -38,9 +38,9 @@ const Lake *castback(const Minefield *f)
 
 extern "C"
 {
-Minefield *mines_init(int rows, int cols, int mines, int intelligence)
+Minefield *mines_init(int rows, int cols, int mines)
 {
-  return new Lake(rows, cols, mines, intelligence);
+  return new Lake(rows, cols, mines);
 }
 
 
@@ -48,6 +48,19 @@ void mines_close(Minefield *f)
 {
   delete castback(f);
 }
+
+
+int mines_max_intelligence()
+{
+  return Lake::max_intelligence();
+}
+
+
+void mines_set_intelligence(Minefield *f, int i)
+{
+  castback(f)->set_intelligence(i);
+}
+
 
 int mines_probe(Minefield *f, int row, int col, int minedP)
 {
