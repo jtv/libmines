@@ -50,7 +50,8 @@ int main()
   {
     cout << "Creating minefield of "
          <<rows<<"x"<<cols<<" fields, "<<mines<<" mines." << endl;
-    Lake L(rows,cols,mines,3);
+    Lake L(rows,cols,mines);
+    L.set_intelligence(Lake::max_intelligence()+1);
     while (L.to_go())
     {
       cout << "Clear patches to go: " << L.to_go() << "..." << endl;

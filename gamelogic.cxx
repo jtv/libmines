@@ -207,11 +207,11 @@ public:
 } // namespace
 
 
-Lake::Lake(int rows, int cols, int mines, int intelligence) :
+Lake::Lake(int rows, int cols, int mines) :
   m_patches(0),
   m_rows(rows),
   m_cols(cols),
-  m_intelligence(intelligence),
+  m_intelligence(1),
   m_patches_to_go(rows*cols-mines),
   m_moves(0)
 {

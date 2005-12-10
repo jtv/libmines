@@ -55,8 +55,14 @@ class Patch;
 class Lake
 {
 public:
-  explicit Lake(int rows, int cols, int mines, int intelligence);
+  explicit Lake(int rows, int cols, int mines);
   ~Lake() throw ();
+
+  /// Maximum intelligence level available
+  static int max_intelligence() throw () { return 2; }
+
+  /// Change intelligence level
+  void set_intelligence(int i) throw () { m_intelligence = i; }
 
   /// Mark given patch as being either clear or mined
   /** The specified amount of "intelligence" is recursively applied in revealing
