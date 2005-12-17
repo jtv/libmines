@@ -419,6 +419,7 @@ void Lake::probe(int row, int col, set<Coords> &changes, bool as_mine)
     set<Coords> worklist;
     worklist.insert(pos);
     propagate(worklist, changes);
+    // TODO: FIXME: This can actually fail, apparently, in loaded games
     assert(m_patches_to_go >= 0);
   }
 }
