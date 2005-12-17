@@ -349,7 +349,7 @@ int Lake::save(char buf[]) const
       for (int i = bitsperchar-1; i >= 0; --i)
       {
 	x <<= 1;
-	if (at(r,c+i).mined()) x |= 1;
+	if (c+i < m_cols && at(r,c+i).mined()) x |= 1;
       }
       *here++ = produce_char(x);
     }
@@ -367,7 +367,7 @@ int Lake::save(char buf[]) const
       for (int i = bitsperchar-1; i >= 0; --i)
       {
 	x <<= 1;
-	if (at(r,c+i).revealed()) x |= 1;
+	if (c+i < m_cols && at(r,c+i).revealed()) x |= 1;
       }
       *here++ = produce_char(x);
     }
