@@ -415,7 +415,11 @@ void Lake::probe(int row, int col, set<Coords> &changes, bool as_mine)
   {
     ++m_moves;
     const Coords pos(row,col);
-    if (p.mined() != as_mine) throw Boom(pos, m_moves, p.mined());
+    if (p.mined() != as_mine)
+    {
+      reveal_patch(row,col);
+      throw Boom(pos, m_moves, p.mined());
+    }
     set<Coords> worklist;
     worklist.insert(pos);
     propagate(worklist, changes);
