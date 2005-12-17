@@ -19,6 +19,7 @@ Suite 330, Boston, MA  02111-1307  USA
 
 // A very basic sample user interface for a Minesweeper game based on libmines
 
+#include <cassert>
 #include <cerrno>
 #include <iostream>
 #include <stdexcept>
