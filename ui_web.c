@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "c_abi.h"
@@ -33,6 +34,13 @@ static const char
 
 enum { idlen=16 };
 enum { maxsize=16384 };
+
+
+static void seed_randomizer(void)
+{
+  srand(getpid()^time(NULL)^(unsigned long)getenv("SERVER_SOFTWARE"));
+}
+
 
 static int read_id(const char input[], char buf[])
 {
@@ -146,7 +154,7 @@ int main(void)
   else if (rows && cols && mines && rows*cols<=maxsize)
   {
     /* We have parameters.  Create new game. */
-    /* TODO: Seed randomizer! */
+    seed_randomizer();
     sprintf(id,"%*.*x",idlen,idlen,rand());
     F = mines_init(rows,cols,mines);
     if (!F) exit(1);
