@@ -44,9 +44,21 @@ Minefield *mines_init(int rows, int cols, int mines)
 }
 
 
+Minefield *mines_load(const char buffer[])
+{
+  return new Lake(buffer);
+}
+
+
 void mines_close(Minefield *f)
 {
   delete castback(f);
+}
+
+
+int mines_save(Minefield *f, char buffer[])
+{
+  return castback(f)->save(buffer);
 }
 
 
@@ -94,6 +106,16 @@ char mines_at(const Minefield *f, int row, int col)
 int mines_togo(const Minefield *f)
 {
   return castback(f)->to_go();
+}
+
+int mines_rows(const Minefield *f)
+{
+  return castback(f)->rows();
+}
+
+int mines_cols(const Minefield *f)
+{
+  return castback(f)->cols();
 }
 
 } // extern "C"
