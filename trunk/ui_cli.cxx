@@ -83,6 +83,8 @@ int main()
 {
   int rows=20, cols=30, mines=200;
 
+  srand(getpid()^time(NULL));
+
   try
   {
     cout << "Creating minefield of "
