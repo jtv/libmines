@@ -30,6 +30,15 @@ typedef void Minefield;
  */
 Minefield *mines_init(int rows, int cols, int mines);
 
+/** @brief Reload game state from memory buffer filled by mines_save()
+ */
+Minefield *mines_load(const char buffer[]);
+
+/** @brief Save minefield to buffer (at least rows*cols+100 bytes large).
+ * @return Number of bytes of buffer space used (not including terminating zero)
+ */
+int mines_save(Minefield *, char buffer[]);
+
 /** @brief Maximum intelligence level implemented by current version
  */
 int mines_max_intelligence(void);
@@ -60,6 +69,14 @@ char mines_at(const Minefield *, int row, int col);
 /** @brief Number of unmined fields still left to be uncovered
  */
 int mines_togo(const Minefield *);
+
+/** @brief Number of rows in minefield
+ */
+int mines_rows(const Minefield *);
+
+/** @brief Number of columns in minefield
+ */
+int mines_cols(const Minefield *);
 
 #ifdef __cplusplus
 }

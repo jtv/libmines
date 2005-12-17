@@ -55,7 +55,11 @@ class Patch;
 class Lake
 {
 public:
-  explicit Lake(int rows, int cols, int mines);
+  /// Start new game
+  Lake(int rows, int cols, int mines);
+  /// Start game from saved game state
+  explicit Lake(const char[]);
+
   ~Lake() throw ();
 
   /// Maximum intelligence level available
@@ -89,10 +93,22 @@ public:
    */
   char status_at(int row, int col) const;
 
+  const int rows() const throw () { return m_rows; }
+  const int cols() const throw () { return m_cols; }
+
+  /// Write game state (in ASCII) to memory buffer
+  /** The available buffer space must be at least rows*cols+100 bytes large.
+   */
+  int save(char buf[]) const;
+
 private:
   enum { border = 3 };
   Patch &at(int row, int col);
   const Patch &at(int row, int col) const;
+
+  void init_field();
+
+  bool place_mine_at(int row, int col);
 
   /// Apply functor f to a square of Patches centered at (row,col)
   /** The INCLUDECENTER template argument determines whether the central patch
@@ -114,7 +130,7 @@ private:
   template<typename FUNCT> void for_neighbours(int row, int col, FUNCT f)
 	{ return for_zone<1,false>(row,col,f); }
 
-  void reveal_patch(int row, int col, std::set<Coords> &changes);
+  void reveal_patch(int row, int col);
 
   /// Initialize a row of patches in the lake's border
   void border_row(int);

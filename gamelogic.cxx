@@ -20,10 +20,12 @@ Suite 330, Boston, MA  02111-1307  USA
 // This is is where heart of the game is implemented.
 
 #include <cassert>
-#include <set>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "gamelogic.hxx"
+#include "save.hxx"
 
 using namespace std;
 
@@ -35,7 +37,7 @@ int rand_coord(int top)
   // TODO: Actually randomize
   return rand() % top;
 }
-}
+} // namespace
 
 
 /// A square patch of water, which may or may not contain a mine
@@ -204,35 +206,109 @@ public:
     }
   }
 };
+
+
 } // namespace
 
 
-Lake::Lake(int rows, int cols, int mines) :
+Lake::Lake(int _rows, int _cols, int mines) :
   m_patches(0),
-  m_rows(rows),
-  m_cols(cols),
+  m_rows(_rows),
+  m_cols(_cols),
   m_intelligence(1),
-  m_patches_to_go(rows*cols-mines),
+  m_patches_to_go(m_rows*m_cols-mines),
   m_moves(0)
 {
-  assert(rows > 0);
-  assert(cols > 0);
+  assert(m_rows > 0);
+  assert(m_cols > 0);
   assert(mines > 0);
-  assert(mines <= rows*cols);
+  assert(mines <= m_rows*m_cols);
 
   m_patches = new Patch[arraysize()];
 
   while (mines)
   {
     const int row = rand_coord(m_rows), col = rand_coord(m_cols);
-    if (!at(row,col).mined())
-    {
-      at(row,col).mine();
-      for_neighbours(row,col,set_nearby_mine());
-      --mines;
-    }
+    mines -= place_mine_at(row,col);
   }
 
+  for (int b=1; b<border; ++b)
+  {
+    border_row(-b);
+    border_row(m_rows+b-1);
+    border_col(-b);
+    border_col(m_cols+b-1);
+  }
+}
+
+
+Lake::Lake(const char buffer[]) :
+  m_patches(0),
+  m_rows(0),
+  m_cols(0),
+  m_intelligence(0),
+  m_patches_to_go(0),
+  m_moves(0)
+{
+  initialize_encoding();
+
+  const char *here = read_header(buffer);
+
+  m_rows = read_int("rows",here);
+  m_cols = read_int("cols",here);
+  m_moves = read_int("move",here);
+  m_intelligence = read_int("intl",here);
+  m_patches_to_go = m_rows * m_cols;
+
+  // TODO: Re-unify this with regular constructor
+  assert(m_rows > 0);
+  assert(m_cols > 0);
+  assert(m_moves >= 0);
+  assert(m_intelligence >= 0);
+
+  m_patches = new Patch[arraysize()];
+
+  here = skip_whitespace(here);
+
+  // TODO: Unify these two read operations
+
+  const int padding = linepadding(m_cols);
+
+  // Read mine placement
+  for (int r=0; r<m_rows; ++r)
+  {
+    for (int c = 0; c < m_cols; c += bitsperchar)
+    {
+      unsigned int x = extract_char(here);
+      for (int i = 0; i < bitsperchar; ++i)
+      {
+	if (x & 1) m_patches_to_go -= place_mine_at(r,c+i);
+	x >>= 1;
+      }
+    }
+    here = read_eol(here, padding);
+  }
+
+  // Read revealed fields
+  for (int r=0; r<m_rows; ++r)
+  {
+    for (int c = 0; c < m_cols; c += bitsperchar)
+    {
+      unsigned int x = extract_char(here);
+      for (int i = 0; i < bitsperchar; ++i)
+      {
+	if (x & 1)
+	{
+	  reveal_patch(r, c+i);
+	  --m_patches_to_go;
+	}
+	x >>= 1;
+      }
+    }
+    here = read_eol(here, padding);
+  }
+
+  // TODO: Re-unify this with regular constructor
   for (int b=1; b<border; ++b)
   {
     border_row(-b);
@@ -248,6 +324,70 @@ Lake::~Lake() throw ()
   delete [] m_patches;
 }
 
+
+int Lake::save(char buf[]) const
+{
+  initialize_encoding();
+  char *here = write_header(buf);
+  here = write_int("rows",here,m_rows);
+  here = write_int("cols",here,m_cols);
+  here = write_int("move",here,m_moves);
+  here = write_int("intl",here,m_intelligence);
+  here = write_newline(here);
+
+  // Padding at end of line required by base64
+  const int padding = linepadding(m_cols);
+
+  // TODO: Unify these two write actions
+
+  // Write mines
+  for (int r = 0; r < m_rows; ++r)
+  {
+    for (int c = 0; c < m_cols; c += bitsperchar)
+    {
+      unsigned int x = 0;
+      for (int i = bitsperchar-1; i >= 0; --i)
+      {
+	x <<= 1;
+	if (at(r,c+i).mined()) x |= 1;
+      }
+      *here++ = produce_char(x);
+    }
+    here = write_eol(here, padding);
+  }
+
+  here = write_newline(here);
+
+  // Write revealed fields
+  for (int r = 0; r < m_rows; ++r)
+  {
+    for (int c = 0; c < m_cols; c += bitsperchar)
+    {
+      unsigned int x = 0;
+      for (int i = bitsperchar-1; i >= 0; --i)
+      {
+	x <<= 1;
+	if (at(r,c+i).revealed()) x |= 1;
+      }
+      *here++ = produce_char(x);
+    }
+    here = write_eol(here, padding);
+  }
+  terminate(here);
+
+  return here - buf;
+}
+
+
+bool Lake::place_mine_at(int row, int col)
+{
+  Patch &p = at(row,col);
+  if (p.mined()) return false;
+
+  p.mine();
+  for_neighbours(row,col,set_nearby_mine());
+  return true;
+}
 
 const Patch &Lake::at(int row, int col) const
 {
@@ -289,27 +429,24 @@ char Lake::status_at(int row, int col) const
   return p.revealed() ? (p.mined() ? '*' : ('0'+p.near_mines())) : '^';
 }
 
-void Lake::reveal_patch(int row, int col, set<Coords> &changes)
+void Lake::reveal_patch(int row, int col)
 {
   Patch &p = at(row,col);
   if (!p.revealed())
   {
     p.reveal();
-    changes.insert(Coords(row,col));
     for_neighbours(row,col,reveal_nearby(p.mined()));
   }
 }
 
 void Lake::border_row(int r)
 {
-  set<Coords> changes;
-  for (int c=m_cols+border-1; c>=-border; --c) reveal_patch(r,c,changes);
+  for (int c=m_cols+border-1; c>=-border; --c) reveal_patch(r,c);
 }
 
 void Lake::border_col(int c)
 {
-  set<Coords> changes;
-  for (int r=m_rows-1; r>=0; --r) reveal_patch(r,c,changes);
+  for (int r=m_rows-1; r>=0; --r) reveal_patch(r,c);
 }
 
 void Lake::propagate(set<Coords> &work, set<Coords> &changes)
@@ -329,7 +466,8 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
         Patch &p = at(row,col);
         if (!p.revealed())
         {
-          reveal_patch(row,col,changes);
+          reveal_patch(row,col);
+	  changes.insert(Coords(row,col));
           if (!p.mined()) --m_patches_to_go;
           for_zone<2,true>(row,col,set_add<UnfinishedPatch>(area));
         }

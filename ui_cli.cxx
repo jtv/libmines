@@ -19,7 +19,12 @@ Suite 330, Boston, MA  02111-1307  USA
 
 // A very basic sample user interface for a Minesweeper game based on libmines
 
+#include <cerrno>
 #include <iostream>
+#include <stdexcept>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "gamelogic.hxx"
 
@@ -39,6 +44,37 @@ void coordsbar(int cols)
   cout << endl;
 }
 
+void save_game(const Lake &L)
+{
+  char *const buf = new char[L.rows()*L.cols()+100];
+  int fd = -1;
+  try
+  {
+    int bytes = L.save(buf);
+    fd = creat("mines.savedgame", 0744);
+    if (fd == -1) throw runtime_error(strerror(errno));
+    write(fd, buf, bytes);
+
+#ifndef NDEBUG
+    // See if we can restore this game, save that, and get the same data back
+    const Lake L2(buf);
+    char *const check = new char[L.rows()*L.cols()+100];
+    bytes = L2.save(check);
+    assert(strcmp(buf,check) == 0);
+    delete [] check;
+    cout << "(Game saved and checked)" << endl;
+#endif
+  }
+  catch (const exception &e)
+  {
+    cerr << e.what() << endl;
+  }
+  delete [] buf;
+  if (fd != -1) close(fd);
+}
+
+
+
 } // namespace
 
 
@@ -54,6 +90,7 @@ int main()
     L.set_intelligence(Lake::max_intelligence()+1);
     while (L.to_go())
     {
+      save_game(L);
       cout << "Clear patches to go: " << L.to_go() << "..." << endl;
       coordsbar(cols);
       cout << endl;
@@ -82,7 +119,7 @@ int main()
       cout <<
 	"Please enter row and column (zero-based, separated by space) of next "
 	"patch you think is mine-free, or make either coordinate negative if "
-	"you want to indicate a mine: "
+	"you want to indicate a mine:"
 	<< endl;
       int r, c;
       cin >> r >> c;
@@ -91,9 +128,9 @@ int main()
       bool thinksismine = false;
       if (r < 0 || c < 0)
       {
-	thinksismine = true;
-	r = abs(r);
-	c = abs(c);
+        thinksismine = true;
+        r = abs(r);
+        c = abs(c);
       }
       if (r >= rows || c >= cols) cout<<"Out of range!"<<endl;
       else L.probe(r,c,changes,thinksismine);
