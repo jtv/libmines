@@ -60,7 +60,7 @@ static void set_filename(char name[], const char gameid[])
 
 int main(void)
 {
-  char id[idlen+1];
+  char id[idlen*2];
   char filename[300];
   int rows=0, cols=0, mines=0, intelligence=mines_max_intelligence();
   int atr=0, atc=0, coords_set=0;
@@ -153,9 +153,16 @@ int main(void)
   }
   else if (rows && cols && mines && rows*cols<=maxsize)
   {
+    size_t idbytes = 0;
+
     /* We have parameters.  Create new game. */
     seed_randomizer();
-    sprintf(id,"%*.*x",idlen,idlen,rand());
+    do
+    {
+      sprintf(id+idbytes,"%*.*x",4,4,rand());
+      idbytes = strlen(id);
+    } while (idbytes < idlen);
+    id[idlen] = '\0';
     F = mines_init(rows,cols,mines);
     if (!F) exit(1);
     mines_set_intelligence(F, intelligence); 
