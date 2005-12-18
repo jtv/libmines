@@ -51,6 +51,9 @@ class Patch;
  * border of clear Patches, which are not shown.  This means there are fewer
  * special cases in the algorithm for border Patches.  They do complicate the
  * array indexing and such, but all that is nicely hidden here.
+ *
+ * Remember to initialize the randomizer by calling srand() with some random
+ * input before starting a game, or you'll always get the same configuration.
  */
 class Lake
 {
