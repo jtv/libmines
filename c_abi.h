@@ -27,6 +27,9 @@ extern "C"
 typedef void Minefield;
 
 /** @brief Create minefield of given size.  Clean up with mines_close() later!
+ *
+ * Remember to initialize the randomizer by calling srand() with some random
+ * input before starting a game, or you'll always get the same configuration.
  */
 Minefield *mines_init(int rows, int cols, int mines);
 
