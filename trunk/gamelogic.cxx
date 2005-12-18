@@ -34,7 +34,7 @@ namespace
 {
 int rand_coord(int top)
 {
-  // TODO: Actually randomize
+  // TODO: There's probably some better random function out there
   return rand() % top;
 }
 } // namespace
@@ -418,12 +418,12 @@ void Lake::probe(int row, int col, set<Coords> &changes, bool as_mine)
     if (p.mined() != as_mine)
     {
       reveal_patch(row,col);
+      if (!p.mined()) --m_patches_to_go;
       throw Boom(pos, m_moves, p.mined());
     }
     set<Coords> worklist;
     worklist.insert(pos);
     propagate(worklist, changes);
-    // TODO: FIXME: This can actually fail, apparently, in loaded games
     assert(m_patches_to_go >= 0);
   }
 }
