@@ -21,6 +21,8 @@ header[] =
   "<title>Minesweeper</title>"
   "</head>"
   "<body>\n",
+youwin[] =
+  "<h1>You win.  Congratulations!</h1>",
 footer[] =
   "</body></html>\n"
 ;
@@ -184,14 +186,22 @@ int main(void)
 
     if (!mines_togo(F))
     {
-      puts("<h1>You win.  Congratulations!</h1>");
+      puts(youwin);
       done=1;
     }
-    else if (coords_set && !mines_probe(F, atr, atc, 0))
+    else if (coords_set)
     {
-      puts("<h1>You lose!</h1>");
-      /* TODO: Actually stop the game here! */
-      done=1;
+      if (mines_probe(F, atr, atc, 0))
+      {
+	puts(youwin);
+	done=1;
+      }
+      else
+      {
+        puts("<h1>You lose!</h1>");
+        /* TODO: Actually stop the game here! */
+        done=1;
+      }
     }
 
     printf("<p>Moves: %d.  Fields to go: %d</p>\n",
