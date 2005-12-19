@@ -216,7 +216,7 @@ Lake::Lake(int _rows, int _cols, int mines) :
   m_rows(_rows),
   m_cols(_cols),
   m_intelligence(1),
-  m_patches_to_go(m_rows*m_cols-mines),
+  m_patches_to_go(m_rows*m_cols),
   m_moves(0)
 {
   assert(m_rows > 0);
@@ -282,7 +282,7 @@ Lake::Lake(const char buffer[]) :
       unsigned int x = extract_char(here);
       for (int i = 0; i < bitsperchar; ++i)
       {
-	if (x & 1) m_patches_to_go -= place_mine_at(r,c+i);
+	if (x & 1) place_mine_at(r,c+i);
 	x >>= 1;
       }
     }
@@ -297,11 +297,7 @@ Lake::Lake(const char buffer[]) :
       unsigned int x = extract_char(here);
       for (int i = 0; i < bitsperchar; ++i)
       {
-	if (x & 1)
-	{
-	  reveal_patch(r, c+i);
-	  --m_patches_to_go;
-	}
+	if (x & 1) reveal_patch(r, c+i);
 	x >>= 1;
       }
     }
@@ -385,6 +381,7 @@ bool Lake::place_mine_at(int row, int col)
   if (p.mined()) return false;
 
   p.mine();
+  --m_patches_to_go;
   for_neighbours(row,col,set_nearby_mine());
   return true;
 }
@@ -418,7 +415,6 @@ void Lake::probe(int row, int col, set<Coords> &changes, bool as_mine)
     if (p.mined() != as_mine)
     {
       reveal_patch(row,col);
-      if (!p.mined()) --m_patches_to_go;
       throw Boom(pos, m_moves, p.mined());
     }
     set<Coords> worklist;
@@ -441,6 +437,8 @@ void Lake::reveal_patch(int row, int col)
   {
     p.reveal();
     for_neighbours(row,col,reveal_nearby(p.mined()));
+    if (row >= 0 && row < m_rows && col >= 0 && col < m_cols && !p.mined())
+      --m_patches_to_go;
   }
 }
 
@@ -473,7 +471,6 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
         {
           reveal_patch(row,col);
 	  changes.insert(Coords(row,col));
-          if (!p.mined()) --m_patches_to_go;
           for_zone<2,true>(row,col,set_add<UnfinishedPatch>(area));
         }
         if (m_intelligence > 0 && p.obvious())
