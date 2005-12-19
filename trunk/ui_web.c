@@ -23,6 +23,8 @@ header[] =
   "<body>\n",
 youwin[] =
   "<h1>You win.  Congratulations!</h1>",
+youlose[] =
+  "<h1><em>Boom!</em>  You lose.</h1>",
 footer[] =
   "</body></html>\n"
 ;
@@ -191,16 +193,16 @@ int main(void)
     }
     else if (coords_set)
     {
-      if (mines_probe(F, atr, atc, 0))
+      if (!mines_probe(F, atr, atc, 0))
+      {
+        puts(youlose);
+        /* TODO: Actually stop the game here! */
+        done=1;
+      }
+      else if (!mines_togo(F))
       {
 	puts(youwin);
 	done=1;
-      }
-      else
-      {
-        puts("<h1>You lose!</h1>");
-        /* TODO: Actually stop the game here! */
-        done=1;
       }
     }
 
