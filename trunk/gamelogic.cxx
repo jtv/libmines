@@ -191,6 +191,8 @@ struct CoordsPair
  * difference of the unexplored areas, then the unexplored area near 
  * the "superset" one that doesn't border on the "subset" patch is either all
  * clear or all mined, respectively.
+ *
+ * This logic comes into play at intelligence level 3.
  */
 class SuperSet
 {
@@ -330,6 +332,12 @@ Lake::Lake(const char buffer[]) :
 Lake::~Lake() throw ()
 {
   delete [] m_patches;
+}
+
+
+int Lake::savesize() const throw ()
+{
+  return m_rows * ((m_cols+patchesperchar-1)/patchesperchar+3) + 100;
 }
 
 
