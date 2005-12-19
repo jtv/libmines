@@ -84,7 +84,7 @@ void save_game(const Lake &L)
 
 int main()
 {
-  int rows=20, cols=30, mines=200;
+  int rows=20, cols=30, mines=250;
 
   srand(getpid()^time(NULL));
 
