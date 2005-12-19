@@ -21,6 +21,7 @@ header[] =
   "<title>Minesweeper</title>"
   "</head>"
   "<body>\n",
+toolarge[] = "<p><em>Playing field too large.  Try something smaller!</em></p>",
 youwin[] =
   "<h1>You win.  Congratulations!</h1>",
 youlose[] =
@@ -122,7 +123,7 @@ int main(void)
 
   if (id[0])
   {
-    char saved[maxsize+100+1];
+    char saved[maxsize+1000];
     int fd = -1;
     ssize_t bytes = 0, bytesread = 0;
 
@@ -155,9 +156,16 @@ int main(void)
     rows = mines_rows(F);
     cols = mines_cols(F);
   }
-  else if (rows && cols && mines && rows*cols<=maxsize)
+  else if (rows && cols && mines)
   {
     size_t idbytes = 0;
+
+    if (rows*cols > maxsize)
+    {
+      puts(toolarge);
+      puts(footer);
+      exit(0);
+    }
 
     /* We have parameters.  Create new game. */
     seed_randomizer();
@@ -169,6 +177,12 @@ int main(void)
     id[idlen] = '\0';
     F = mines_init(rows,cols,mines);
     if (!F) exit(1);
+    if (mines_savesize(F) > maxsize)
+    {
+      puts(toolarge);
+      mines_close(F);
+      F = NULL;
+    }
     mines_set_intelligence(F, intelligence); 
   }
   else
@@ -182,7 +196,7 @@ int main(void)
     int r, c;
     int done=0;
     const char *scriptname = getenv("SCRIPT_NAME");
-    char saved[maxsize+100+1];
+    char saved[maxsize+100];
     int fd;
     size_t bytes;
 

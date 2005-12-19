@@ -56,6 +56,12 @@ void mines_close(Minefield *f)
 }
 
 
+int mines_savesize(const Minefield *f)
+{
+  return castback(f)->savesize();
+}
+
+
 int mines_save(Minefield *f, char buffer[])
 {
   return castback(f)->save(buffer);

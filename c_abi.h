@@ -37,7 +37,11 @@ Minefield *mines_init(int rows, int cols, int mines);
  */
 Minefield *mines_load(const char buffer[]);
 
-/** @brief Save minefield to buffer (at least rows*cols+100 bytes large).
+/** @brief Maximum number of bytes of storage required to save game
+ */
+int mines_savesize(const Minefield *);
+
+/** @brief Save minefield to buffer (at least mines_savesize() large)
  * @return Number of bytes of buffer space used (not including terminating zero)
  */
 int mines_save(Minefield *, char buffer[]);

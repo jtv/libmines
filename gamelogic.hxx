@@ -99,6 +99,9 @@ public:
   const int rows() const throw () { return m_rows; }
   const int cols() const throw () { return m_cols; }
 
+  /// Maximum number of bytes required to save this game
+  int savesize() const throw ();
+
   /// Write game state (in ASCII) to memory buffer
   /** The available buffer space must be at least rows*cols+100 bytes large.
    */

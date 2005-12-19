@@ -47,11 +47,13 @@ void coordsbar(int cols)
 
 void save_game(const Lake &L)
 {
-  char *const buf = new char[L.rows()*L.cols()+100];
+  assert(L.savesize() == L.savesize());
+  char *const buf = new char[L.savesize()];
   int fd = -1;
   try
   {
     int bytes = L.save(buf);
+    assert(bytes < L.savesize());
     fd = creat("mines.savedgame", 0744);
     if (fd == -1) throw runtime_error(strerror(errno));
     write(fd, buf, bytes);
@@ -59,8 +61,9 @@ void save_game(const Lake &L)
 #ifndef NDEBUG
     // See if we can restore this game, save that, and get the same data back
     const Lake L2(buf);
-    char *const check = new char[L.rows()*L.cols()+100];
-    bytes = L2.save(check);
+    char *const check = new char[L2.savesize()];
+    const int bytes2 = L2.save(check);
+    assert(bytes2 == bytes);
     assert(strcmp(buf,check) == 0);
     delete [] check;
     cout << "(Game saved and checked)" << endl;
