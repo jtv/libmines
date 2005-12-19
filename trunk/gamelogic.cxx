@@ -30,6 +30,7 @@ Suite 330, Boston, MA  02111-1307  USA
 using namespace std;
 
 
+#include<iostream>// DEBUG CODE
 namespace
 {
 int rand_coord(int top)
@@ -183,6 +184,13 @@ struct CoordsPair
   }
 };
 
+
+bool are_neighbours(Coords a, Coords b)
+{
+  return abs(a.row-b.row) <= 1 && abs(a.col-b.col) <= 1;
+}
+
+
 /// Is Patch a candidate for "superset detection" based on newly revealed Patch?
 /** This looks for the case where the unexplored area around a Patch is a proper
  * superset of a neighbour's (where one of the two is newly revealed).  If it
@@ -204,13 +212,21 @@ public:
     m_revealed(newly_revealed),
     m_rc(nr)
   {
-    assert(newly_revealed.revealed());
+    assert(is_candidate(newly_revealed));
+  }
+
+  /// Can this patch possibly qualify for subset/superset recognition?
+  static bool is_candidate(const Patch &p) throw ()
+  {
+    return p.revealed() && p.near_unknown() && p.near_unknown() < 5;
   }
 
   void operator()(Coords c, const Patch &p)
   {
-    if (p.revealed())
+    assert(are_neighbours(c,m_rc));
+    if (is_candidate(p))
     {
+      assert(&p != &m_revealed);
       const int areadiff = p.near_unknown() - m_revealed.near_unknown();
       if (areadiff > 0)
         consider(m_rc, m_revealed, c, p, areadiff);
@@ -224,17 +240,73 @@ private:
   const Patch &m_revealed;
   Coords m_rc;
 
+  /// How many neighbours do two neighbours a and b have in common?
+  static int common_neighbours(Coords a, Coords b) throw ()
+  {
+    // Assuming that a and b are neighbours, there are only two cases: either
+    // they lie on the same row or column, in which case they share 4 common
+    // neighbours; or they touch diagonally, in which they have only two
+    // neighbours in common.
+    return (a.row==b.row||a.col==b.col) ? 4 : 2;
+  }
+
   void consider(Coords subc, const Patch &subp,
       Coords supc, const Patch &supp,
       int areadiff)
   {
     assert(areadiff > 0);
-    if (supp.near_hiddenmines() == subp.near_hiddenmines() ||
-	supp.near_hiddenmines() == areadiff)
+    if (subp.near_unknown() <= common_neighbours(subc,supc) &&
+	(supp.near_hiddenmines() == subp.near_hiddenmines() ||
+	 supp.near_hiddenmines() == areadiff))
       m_worklist.insert(make_pair(subc,supc));
   }
 };
 
+
+void common_neighbours(Coords a, Coords b, set<Coords> &output)
+{
+  assert(a < b || b < a);
+  if (a.row == b.row)
+  {
+    assert(abs(a.col-b.col)==1);
+    output.insert(Coords(a.row-1,a.col));
+    output.insert(Coords(a.row-1,b.col));
+    output.insert(Coords(a.row+1,a.col));
+    output.insert(Coords(a.row+1,b.col));
+  }
+  else if (a.col == b.col)
+  {
+    assert(abs(a.row-b.row)==1);
+    output.insert(Coords(a.row,a.col-1));
+    output.insert(Coords(a.row,a.col+1));
+    output.insert(Coords(b.row,a.col-1));
+    output.insert(Coords(b.row,a.col+1));
+  }
+  else
+  {
+    assert(abs(a.row-b.row)==1);
+    assert(abs(a.col-b.col)==1);
+    output.insert(Coords(a.row,b.col));
+    output.insert(Coords(b.row,a.col));
+  }
+}
+
+
+/// Add unrevealed patches that are not neighbours of given patch to set
+class NotNear
+{
+public:
+  NotNear(Coords c, set<Coords> &work) : m_worklist(work), m_remote(c) {}
+
+  void operator()(Coords c, const Patch &p) const
+  {
+    if (!p.revealed() && !are_neighbours(c, m_remote)) m_worklist.insert(c);
+  }
+
+private:
+  set<Coords> &m_worklist;
+  Coords m_remote;
+};
 
 } // namespace
 
@@ -506,14 +578,40 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
       for (set<Coords>::const_iterator i = area.begin(); i != area.end(); ++i)
       {
 	const Patch &p = at(i->row, i->col);
-        if (p.revealed()) for_neighbours(i->row, i->col, SuperSet(cand,*i,p));
+        if (SuperSet::is_candidate(p))
+	  for_neighbours(i->row, i->col, SuperSet(cand,*i,p));
       }
       
-      // TODO: Iterate through candidates to find the *real* superset cases
+      // Iterate through candidates to find the *real* superset cases
       for (SuperSet::PairList::const_iterator i = cand.begin();
 	   i != cand.end();
 	   ++i)
       {
+	assert(are_neighbours(i->first,i->second));
+
+	set<Coords> overlap;
+	common_neighbours(i->first,i->second, overlap);
+	int subset_togo = at(i->first.row,i->first.col).near_unknown();
+	// Verify that the number of unrevealed patches among the pair's set of
+	// common neighbours accounts for all of the unrevealed neighbours of
+	// the first ("subset") of the two
+	for (set<Coords>::const_iterator j = overlap.begin();
+	     j != overlap.end();
+	     ++j)
+	{
+	  assert(are_neighbours(i->first,*j));
+	  assert(are_neighbours(i->second,*j));
+	  subset_togo -= !at(j->row,j->col).revealed();
+	}
+	assert(subset_togo >= 0);
+
+	if (!subset_togo)
+	{
+	  // All unrevealed neighbours accounted for!  All other unrevealed
+	  // neighbours of the second patch that are not neighbours of the first
+	  // can be revealed.
+	  for_neighbours(i->second.row, i->second.col, NotNear(i->first, next));
+	}
       }
     }
 
