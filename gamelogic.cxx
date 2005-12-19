@@ -96,8 +96,8 @@ void Patch::set_nearby_mine()
 {
   ++m_nearmines;
   ++m_near_hiddenmines;
-  assert(m_nearmines == m_near_hiddenmines);
   assert(m_nearmines <= 8);
+  assert(m_near_hiddenmines <= m_nearmines);
 }
 
 void Patch::reveal_nearby(bool is_mined)
@@ -173,37 +173,63 @@ public:
   bool operator()(const Patch &p) const throw () { return p.obvious(); }
 };
 
+struct CoordsPair
+{
+  bool operator()(const pair<Coords,Coords> &lhs,
+      const pair<Coords,Coords> &rhs) const throw ()
+  {
+    return (lhs.first < rhs.first) ||
+      (!(rhs.first < lhs.first) && (lhs.second < rhs.second));
+  }
+};
 
 /// Is Patch a candidate for "superset detection" based on newly revealed Patch?
-/** This looks for the case where the unexplored area around the Patch is a
- * proper superset of the one of a neighbour that was just revealed.  If it is,
- * and if the number of unexplored mines near the current one is either equal to
- * that near the newly revealed one, or the difference is equal to the size
- * difference of the unexplored areas, then the unexplored area near the Patch
- * is either all clear or all mined, respectively.
+/** This looks for the case where the unexplored area around a Patch is a proper
+ * superset of a neighbour's (where one of the two is newly revealed).  If it
+ * is, and if the number of unexplored mines near the "superset" one is either
+ * equal to that near the "subset" one, or the difference is equal to the size
+ * difference of the unexplored areas, then the unexplored area near 
+ * the "superset" one that doesn't border on the "subset" patch is either all
+ * clear or all mined, respectively.
  */
 class SuperSet
 {
-  set<Coords> &m_worklist;
-  const Patch &m_revealed;
 public:
-  SuperSet(set<Coords> &worklist, const Patch &newly_revealed) :
+  typedef set<pair<Coords,Coords>,CoordsPair> PairList;
+
+  SuperSet(PairList &worklist, Coords nr, const Patch &newly_revealed) :
     m_worklist(worklist),
-    m_revealed(newly_revealed)
+    m_revealed(newly_revealed),
+    m_rc(nr)
   {
     assert(newly_revealed.revealed());
   }
 
-  void operator()(Coords c, const Patch &p) const
+  void operator()(Coords c, const Patch &p)
   {
     if (p.revealed())
     {
       const int areadiff = p.near_unknown() - m_revealed.near_unknown();
-      if (areadiff > 0 &&
-	  (p.near_hiddenmines() == m_revealed.near_hiddenmines() ||
-	   p.near_hiddenmines() == areadiff))
-      m_worklist.insert(c);
+      if (areadiff > 0)
+        consider(m_rc, m_revealed, c, p, areadiff);
+      else if (areadiff < 0)
+        consider(c, p, m_rc, m_revealed, -areadiff);
     }
+  }
+
+private:
+  PairList &m_worklist;
+  const Patch &m_revealed;
+  Coords m_rc;
+
+  void consider(Coords subc, const Patch &subp,
+      Coords supc, const Patch &supp,
+      int areadiff)
+  {
+    assert(areadiff > 0);
+    if (supp.near_hiddenmines() == subp.near_hiddenmines() ||
+	supp.near_hiddenmines() == areadiff)
+      m_worklist.insert(make_pair(subc,supc));
   }
 };
 
@@ -270,39 +296,25 @@ Lake::Lake(const char buffer[]) :
 
   here = skip_whitespace(here);
 
-  // TODO: Unify these two read operations
-
   const int padding = linepadding(m_cols);
 
-  // Read mine placement
+  // Read data block: mine placement & revealed fields
   for (int r=0; r<m_rows; ++r)
   {
-    for (int c = 0; c < m_cols; c += bitsperchar)
+    for (int c = 0; c < m_cols; c += patchesperchar)
     {
       unsigned int x = extract_char(here);
-      for (int i = 0; i < bitsperchar; ++i)
+      for (int i = 0; i < patchesperchar; ++i)
       {
-	if (x & 1) place_mine_at(r,c+i);
-	x >>= 1;
+	if (x & 2) place_mine_at(r,c+i);
+	if (x & 1) reveal_patch(r,c+i);
+	x >>= 2;
       }
     }
     here = read_eol(here, padding);
   }
 
-  // Read revealed fields
-  for (int r=0; r<m_rows; ++r)
-  {
-    for (int c = 0; c < m_cols; c += bitsperchar)
-    {
-      unsigned int x = extract_char(here);
-      for (int i = 0; i < bitsperchar; ++i)
-      {
-	if (x & 1) reveal_patch(r, c+i);
-	x >>= 1;
-      }
-    }
-    here = read_eol(here, padding);
-  }
+  read_terminator(here);
 
   // TODO: Re-unify this with regular constructor
   for (int b=1; b<border; ++b)
@@ -334,35 +346,16 @@ int Lake::save(char buf[]) const
   // Padding at end of line required by base64
   const int padding = linepadding(m_cols);
 
-  // TODO: Unify these two write actions
-
-  // Write mines
+  // Write mines & revealed fields
   for (int r = 0; r < m_rows; ++r)
   {
-    for (int c = 0; c < m_cols; c += bitsperchar)
+    for (int c = 0; c < m_cols; c += patchesperchar)
     {
       unsigned int x = 0;
-      for (int i = bitsperchar-1; i >= 0; --i)
+      for (int i = patchesperchar-1; i >= 0; --i)
       {
-	x <<= 1;
-	if (c+i < m_cols && at(r,c+i).mined()) x |= 1;
-      }
-      *here++ = produce_char(x);
-    }
-    here = write_eol(here, padding);
-  }
-
-  here = write_newline(here);
-
-  // Write revealed fields
-  for (int r = 0; r < m_rows; ++r)
-  {
-    for (int c = 0; c < m_cols; c += bitsperchar)
-    {
-      unsigned int x = 0;
-      for (int i = bitsperchar-1; i >= 0; --i)
-      {
-	x <<= 1;
+	x <<= 2;
+	if (c+i < m_cols && at(r,c+i).mined()) x |= 2;
 	if (c+i < m_cols && at(r,c+i).revealed()) x |= 1;
       }
       *here++ = produce_char(x);
@@ -499,17 +492,19 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
      */
     if (m_intelligence > 2)
     {
-      set<Coords> cand;
+      SuperSet::PairList cand;
 
-      // First step: filter out the possible cases
+      // First step: filter out the possible cases, based purely on numbers
       for (set<Coords>::const_iterator i = area.begin(); i != area.end(); ++i)
       {
 	const Patch &p = at(i->row, i->col);
-        if (p.revealed()) for_neighbours(i->row, i->col, SuperSet(cand,p));
+        if (p.revealed()) for_neighbours(i->row, i->col, SuperSet(cand,*i,p));
       }
       
       // TODO: Iterate through candidates to find the *real* superset cases
-      for (set<Coords>::const_iterator i = cand.begin(); i != cand.end(); ++i)
+      for (SuperSet::PairList::const_iterator i = cand.begin();
+	   i != cand.end();
+	   ++i)
       {
       }
     }

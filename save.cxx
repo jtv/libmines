@@ -32,7 +32,7 @@ using namespace std;
 namespace
 {
 /// Header at start of saved file--we may change the format later
-const string saveheader = "#mines 0.1\n";
+const string saveheader = "#mines 0.2\n";
 
 unsigned char encode[64], decode[256];
 volatile bool encoding_initialized = false;
@@ -187,5 +187,13 @@ const char *read_eol(const char *here, int padding)
 void terminate(char *here)
 {
   *here = '\0';
+}
+
+
+void read_terminator(const char *here)
+{
+  here = skip_whitespace(here);
+  if (*here) throw runtime_error("Saved game format error: "
+      "Unexpected data after end of data block");
 }
 

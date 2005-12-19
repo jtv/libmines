@@ -17,7 +17,7 @@ libmines; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
 Suite 330, Boston, MA  02111-1307  USA
 */
 
-enum { bitsperchar = 6 };
+enum { patchesperchar = 3 };
 
 /// Call this to initialize encoding tables (lazy; should be threadsafe)
 void initialize_encoding();
@@ -50,4 +50,6 @@ char produce_char(unsigned int);
 
 /// Write terminating zero to output buffer
 void terminate(char *);
+/// Verify that end-of-file happens where we expect it
+void read_terminator(const char *);
 
