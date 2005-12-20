@@ -206,6 +206,8 @@ int main(void)
     char saved[maxsize+100];
     int fd;
     size_t bytes;
+    char url[200];
+    size_t urlhead;
 
     if (!mines_togo(F))
     {
@@ -230,16 +232,18 @@ int main(void)
     printf("<p>Moves: %d.  Fields to go: %d</p>\n",
 	mines_moves(F), mines_togo(F));
     printf("<form action=\"%s\" method=\"GET\"><table>", scriptname);
+    urlhead = sprintf(url, "<a href=\"%s?game=%s&atr=", scriptname, id);
     for (r=-1; r<=rows; ++r)
     {
+      sprintf(url+urlhead, "%d&atc=", r);
+
       printf("<tr>");
       for (c=-1; c<=cols; ++c)
       {
 	const char x = mines_at(F, r, c);
 	printf("<td>");
 	if (done || x != '^') printf("%c", x);
-	else printf("<a href=\"%s?game=%s&atr=%d&atc=%d\">=</a>",
-	      scriptname,id,r,c);
+	else printf("%s%d\">=</a>",url,c);
 	printf("</td>");
       }
       puts("</tr>");
