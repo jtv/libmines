@@ -93,7 +93,7 @@ int main()
     cout << "Creating minefield of "
          <<rows<<"x"<<cols<<" fields, "<<mines<<" mines." << endl;
     Lake L(rows,cols,mines);
-    L.set_intelligence(Lake::max_intelligence()+1);
+    L.set_intelligence(Lake::max_intelligence());
     while (L.to_go())
     {
       save_game(L);
