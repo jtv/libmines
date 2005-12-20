@@ -232,7 +232,7 @@ int main(void)
     printf("<p>Moves: %d.  Fields to go: %d</p>\n",
 	mines_moves(F), mines_togo(F));
     printf("<form action=\"%s\" method=\"GET\"><table>", scriptname);
-    urlhead = sprintf(url, "<a href=\"%s?game=%s&atr=", scriptname, id);
+    urlhead = sprintf(url, "<td><a href=\"%s?game=%s&atr=", scriptname, id);
     for (r=-1; r<=rows; ++r)
     {
       sprintf(url+urlhead, "%d&atc=", r);
@@ -241,10 +241,8 @@ int main(void)
       for (c=-1; c<=cols; ++c)
       {
 	const char x = mines_at(F, r, c);
-	printf("<td>");
-	if (done || x != '^') printf("%c", x);
-	else printf("%s%d\">=</a>",url,c);
-	printf("</td>");
+	if (done || x != '^') printf("<td>%c</td>",x);
+	else printf("%s%d\">=</a></td>",url,c);
       }
       puts("</tr>");
     }
