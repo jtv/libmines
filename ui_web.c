@@ -167,6 +167,13 @@ int main(void)
       exit(0);
     }
 
+    if (mines >= rows*cols)
+    {
+      puts("<p><em>That's too many mines!</em></p>");
+      puts(footer);
+      exit(0);
+    }
+
     /* We have parameters.  Create new game. */
     seed_randomizer();
     do
