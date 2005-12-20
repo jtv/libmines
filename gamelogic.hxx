@@ -109,10 +109,9 @@ public:
 
 private:
   enum { border = 3 };
+  void init_field();
   Patch &at(int row, int col);
   const Patch &at(int row, int col) const;
-
-  void init_field();
 
   bool place_mine_at(int row, int col);
 

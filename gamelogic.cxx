@@ -319,25 +319,12 @@ Lake::Lake(int _rows, int _cols, int mines) :
   m_patches_to_go(m_rows*m_cols),
   m_moves(0)
 {
-  assert(m_rows > 0);
-  assert(m_cols > 0);
-  assert(mines > 0);
-  assert(mines <= m_rows*m_cols);
-
-  m_patches = new Patch[arraysize()];
+  init_field();
 
   while (mines)
   {
     const int row = rand_coord(m_rows), col = rand_coord(m_cols);
     mines -= place_mine_at(row,col);
-  }
-
-  for (int b=1; b<border; ++b)
-  {
-    border_row(-b);
-    border_row(m_rows+b-1);
-    border_col(-b);
-    border_col(m_cols+b-1);
   }
 }
 
@@ -360,13 +347,7 @@ Lake::Lake(const char buffer[]) :
   m_intelligence = read_int("intl",here);
   m_patches_to_go = m_rows * m_cols;
 
-  // TODO: Re-unify this with regular constructor
-  assert(m_rows > 0);
-  assert(m_cols > 0);
-  assert(m_moves >= 0);
-  assert(m_intelligence >= 0);
-
-  m_patches = new Patch[arraysize()];
+  init_field();
 
   here = skip_whitespace(here);
 
@@ -387,17 +368,7 @@ Lake::Lake(const char buffer[]) :
     }
     here = read_eol(here, padding);
   }
-
   read_terminator(here);
-
-  // TODO: Re-unify this with regular constructor
-  for (int b=1; b<border; ++b)
-  {
-    border_row(-b);
-    border_row(m_rows+b-1);
-    border_col(-b);
-    border_col(m_cols+b-1);
-  }
 }
 
 
@@ -406,6 +377,23 @@ Lake::~Lake() throw ()
   delete [] m_patches;
 }
 
+
+void Lake::init_field()
+{
+  assert(m_rows > 0);
+  assert(m_cols > 0);
+  assert(m_moves >= 0);
+  assert(m_intelligence >= 0);
+
+  m_patches = new Patch[arraysize()];
+  for (int b=1; b<border; ++b)
+  {
+    border_row(-b);
+    border_row(m_rows+b-1);
+    border_col(-b);
+    border_col(m_cols+b-1);
+  }
+}
 
 int Lake::savesize() const throw ()
 {
