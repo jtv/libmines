@@ -218,15 +218,16 @@ public:
   /// Can this patch possibly qualify for subset/superset recognition?
   static bool is_candidate(const Patch &p) throw ()
   {
-    return p.revealed() && p.near_unknown() && p.near_unknown() < 5;
+    return p.revealed() && p.near_unknown();
   }
 
   void operator()(Coords c, const Patch &p)
   {
-    assert(are_neighbours(c,m_rc));
-    if (is_candidate(p))
+    if (&p != &m_revealed &&
+	is_candidate(p) &&
+        abs(c.row-m_rc.row) <= 2 && abs(c.col-m_rc.col) <= 2 &&
+        min(abs(c.row-m_rc.row),abs(c.col-m_rc.col)) < 2)
     {
-      assert(&p != &m_revealed);
       const int areadiff = p.near_unknown() - m_revealed.near_unknown();
       if (areadiff > 0)
         consider(m_rc, m_revealed, c, p, areadiff);
@@ -240,56 +241,35 @@ private:
   const Patch &m_revealed;
   Coords m_rc;
 
-  /// How many neighbours do two neighbours a and b have in common?
-  static int common_neighbours(Coords a, Coords b) throw ()
+  /// How many neighbours do two patches a and b have in common?
+  static int overlap(Coords a, Coords b) throw ()
   {
-    // Assuming that a and b are neighbours, there are only two cases: either
-    // they lie on the same row or column, in which case they share 4 common
-    // neighbours; or they touch diagonally, in which they have only two
-    // neighbours in common.
-    return (a.row==b.row||a.col==b.col) ? 4 : 2;
+    assert(a < b || b < a);
+    const int rowdiff = abs(a.row-b.row),
+	      coldiff = abs(a.col-b.col);
+    const int bigdiff = max(rowdiff,coldiff),
+	      smalldiff = min(rowdiff,coldiff);
+    assert(bigdiff > 0);
+    assert(bigdiff <= 2);
+    assert(smalldiff >= 0);
+    assert(smalldiff < 2);
+    assert(smalldiff <= bigdiff);
+
+    return (smalldiff == 1) ? 2 : ((bigdiff == 2) ? 3 : 4);
   }
 
   void consider(Coords subc, const Patch &subp,
       Coords supc, const Patch &supp,
       int areadiff)
   {
+    assert(&subp != &supp);
     assert(areadiff > 0);
-    if (subp.near_unknown() <= common_neighbours(subc,supc) &&
+    if (subp.near_unknown() <= overlap(subc,supc) &&
 	(supp.near_hiddenmines() == subp.near_hiddenmines() ||
 	 supp.near_hiddenmines() == areadiff))
       m_worklist.insert(make_pair(subc,supc));
   }
 };
-
-
-void common_neighbours(Coords a, Coords b, set<Coords> &output)
-{
-  assert(a < b || b < a);
-  if (a.row == b.row)
-  {
-    assert(abs(a.col-b.col)==1);
-    output.insert(Coords(a.row-1,a.col));
-    output.insert(Coords(a.row-1,b.col));
-    output.insert(Coords(a.row+1,a.col));
-    output.insert(Coords(a.row+1,b.col));
-  }
-  else if (a.col == b.col)
-  {
-    assert(abs(a.row-b.row)==1);
-    output.insert(Coords(a.row,a.col-1));
-    output.insert(Coords(a.row,a.col+1));
-    output.insert(Coords(b.row,a.col-1));
-    output.insert(Coords(b.row,a.col+1));
-  }
-  else
-  {
-    assert(abs(a.row-b.row)==1);
-    assert(abs(a.col-b.col)==1);
-    output.insert(Coords(a.row,b.col));
-    output.insert(Coords(b.row,a.col));
-  }
-}
 
 
 /// Add unrevealed patches that are not neighbours of given patch to set
@@ -575,22 +555,24 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
 	   i != cand.end();
 	   ++i)
       {
-	assert(are_neighbours(i->first,i->second));
+	assert(at(i->first.row,i->first.col).revealed());
+	assert(at(i->second.row,i->second.col).revealed());
 
-	set<Coords> overlap;
-	common_neighbours(i->first,i->second, overlap);
 	int subset_togo = at(i->first.row,i->first.col).near_unknown();
+	assert(subset_togo);
+
 	// Verify that the number of unrevealed patches among the pair's set of
 	// common neighbours accounts for all of the unrevealed neighbours of
 	// the first ("subset") of the two
-	for (set<Coords>::const_iterator j = overlap.begin();
-	     j != overlap.end();
-	     ++j)
-	{
-	  assert(are_neighbours(i->first,*j));
-	  assert(are_neighbours(i->second,*j));
-	  subset_togo -= !at(j->row,j->col).revealed();
-	}
+	for (int r = min(0, max(i->first.row,i->second.row)-1);
+	     r <= max(m_rows, min(i->first.row,i->second.row)+1);
+	     ++r)
+	  for (int c = min(0, max(i->first.col,i->second.col)-1);
+	       c <= max(m_cols, min(i->first.col,i->second.col)+1);
+	       ++c)
+	    if (!at(r,c).revealed())
+	      --subset_togo;
+
 	assert(subset_togo >= 0);
 
 	if (!subset_togo)
