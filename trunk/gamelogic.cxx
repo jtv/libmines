@@ -190,104 +190,6 @@ bool are_neighbours(Coords a, Coords b)
   return abs(a.row-b.row) <= 1 && abs(a.col-b.col) <= 1;
 }
 
-
-/// Is Patch a candidate for "superset detection" based on newly revealed Patch?
-/** This looks for the case where the unexplored area around a Patch is a proper
- * superset of a neighbour's (where one of the two is newly revealed).  If it
- * is, and if the number of unexplored mines near the "superset" one is either
- * equal to that near the "subset" one, or the difference is equal to the size
- * difference of the unexplored areas, then the unexplored area near 
- * the "superset" one that doesn't border on the "subset" patch is either all
- * clear or all mined, respectively.
- *
- * This logic comes into play at intelligence level 3.
- */
-class SuperSet
-{
-public:
-  typedef set<pair<Coords,Coords>,CoordsPair> PairList;
-
-  SuperSet(PairList &worklist, Coords nr, const Patch &newly_revealed) :
-    m_worklist(worklist),
-    m_revealed(newly_revealed),
-    m_rc(nr)
-  {
-    assert(is_candidate(newly_revealed));
-  }
-
-  /// Can this patch possibly qualify for subset/superset recognition?
-  static bool is_candidate(const Patch &p) throw ()
-  {
-    return p.revealed() && p.near_unknown();
-  }
-
-  void operator()(Coords c, const Patch &p)
-  {
-    if (&p != &m_revealed &&
-	is_candidate(p) &&
-        abs(c.row-m_rc.row) <= 2 && abs(c.col-m_rc.col) <= 2 &&
-        min(abs(c.row-m_rc.row),abs(c.col-m_rc.col)) < 2)
-    {
-      const int areadiff = p.near_unknown() - m_revealed.near_unknown();
-      if (areadiff > 0)
-        consider(m_rc, m_revealed, c, p, areadiff);
-      else if (areadiff < 0)
-        consider(c, p, m_rc, m_revealed, -areadiff);
-    }
-  }
-
-private:
-  PairList &m_worklist;
-  const Patch &m_revealed;
-  Coords m_rc;
-
-  /// How many neighbours do two patches a and b have in common?
-  static int overlap(Coords a, Coords b) throw ()
-  {
-    assert(a < b || b < a);
-    const int rowdiff = abs(a.row-b.row),
-	      coldiff = abs(a.col-b.col);
-    const int bigdiff = max(rowdiff,coldiff),
-	      smalldiff = min(rowdiff,coldiff);
-    assert(bigdiff > 0);
-    assert(bigdiff <= 2);
-    assert(smalldiff >= 0);
-    assert(smalldiff < 2);
-    assert(smalldiff <= bigdiff);
-
-    return (smalldiff == 1) ? 2 : ((bigdiff == 2) ? 3 : 4);
-  }
-
-  void consider(Coords subc, const Patch &subp,
-      Coords supc, const Patch &supp,
-      int areadiff)
-  {
-    assert(&subp != &supp);
-    assert(areadiff > 0);
-    if (subp.near_unknown() <= overlap(subc,supc) &&
-	(supp.near_hiddenmines() == subp.near_hiddenmines() ||
-	 supp.near_hiddenmines() == areadiff))
-      m_worklist.insert(make_pair(subc,supc));
-  }
-};
-
-
-/// Add unrevealed patches that are not neighbours of given patch to set
-class NotNear
-{
-public:
-  NotNear(Coords c, set<Coords> &work) : m_worklist(work), m_remote(c) {}
-
-  void operator()(Coords c, const Patch &p) const
-  {
-    if (!p.revealed() && !are_neighbours(c, m_remote)) m_worklist.insert(c);
-  }
-
-private:
-  set<Coords> &m_worklist;
-  Coords m_remote;
-};
-
 } // namespace
 
 
@@ -526,63 +428,14 @@ void Lake::propagate(set<Coords> &work, set<Coords> &changes)
       for (set<Coords>::const_iterator i = area.begin(); i != area.end(); ++i)
         for_zone<1,true>(i->row,i->col,set_add<ObviousPatch>(next));
 
-    /* Recognize the case where two explored patches A and B have sets of
-     * unexplored neighbours U such that 
-     *  1. U(A) is a proper subset of U(B), and 
-     *  2. the numbers of unexplored nearby mines M satisfy either:
-     *   (a) M(B) - M(A) = 0 (in which case U(B)\U(A) is all clear) or
-     *   (b) M(B) - M(A) = |U(B)\U(A)|  (in which case U(B)\U(A) is all mines).
-     *
-     * At the moment I don't see a clever way of implementing this with mere
-     * local scalar comparisons.  Unless we count use of bitfields; the full set
-     * of neighbours for a Patch fits seductively well into a byte.  But that
-     * would introduce unpleasant complexity.
+    /* Recognize cases where two patches' sets of nearby unrevealed patches
+     * overlap, such that one of the two difference sets can be concluded to be
+     * mine-free and the other have only mined patches.  One of the two
+     * difference sets may be empty.
      */
     if (m_intelligence > 2)
     {
-      SuperSet::PairList cand;
-
-      // First step: filter out the possible cases, based purely on numbers
-      for (set<Coords>::const_iterator i = area.begin(); i != area.end(); ++i)
-      {
-	const Patch &p = at(i->row, i->col);
-        if (SuperSet::is_candidate(p))
-	  for_neighbours(i->row, i->col, SuperSet(cand,*i,p));
-      }
-      
-      // Iterate through candidates to find the *real* superset cases
-      for (SuperSet::PairList::const_iterator i = cand.begin();
-	   i != cand.end();
-	   ++i)
-      {
-	assert(at(i->first.row,i->first.col).revealed());
-	assert(at(i->second.row,i->second.col).revealed());
-
-	int subset_togo = at(i->first.row,i->first.col).near_unknown();
-	assert(subset_togo);
-
-	// Verify that the number of unrevealed patches among the pair's set of
-	// common neighbours accounts for all of the unrevealed neighbours of
-	// the first ("subset") of the two
-	for (int r = min(0, max(i->first.row,i->second.row)-1);
-	     r <= max(m_rows, min(i->first.row,i->second.row)+1);
-	     ++r)
-	  for (int c = min(0, max(i->first.col,i->second.col)-1);
-	       c <= max(m_cols, min(i->first.col,i->second.col)+1);
-	       ++c)
-	    if (!at(r,c).revealed())
-	      --subset_togo;
-
-	assert(subset_togo >= 0);
-
-	if (!subset_togo)
-	{
-	  // All unrevealed neighbours accounted for!  All other unrevealed
-	  // neighbours of the second patch that are not neighbours of the first
-	  // can be revealed.
-	  for_neighbours(i->second.row, i->second.col, NotNear(i->first, next));
-	}
-      }
+      // TODO: TODO: TODO:
     }
 
     work.swap(next);
