@@ -4,10 +4,8 @@ CXXFLAGS=-O2 -g \
 	-Wall \
 	-Werror \
 	-fstrict-aliasing \
-	-funit-at-a-time \
 	-pedantic \
 	-W \
-	-Wextra \
 	-Wshadow \
 	-Wreorder \
 	-Wold-style-cast \
@@ -16,10 +14,8 @@ CFLAGS=-O2 -g \
 	-Wall \
 	-Werror \
 	-fstrict-aliasing \
-	-funit-at-a-time \
 	-pedantic \
 	-W \
-	-Wextra \
 	-Wshadow
 
 # TODO: Rebuild all when include/*.h* changes
@@ -36,10 +32,10 @@ distclean: clean
 	make -C doc distclean
 
 library:
-	make -C src CPPFLAGS="$(CPPFLAGS) -I../include" LDFLAGS="$(LDFLAGS) -L../src"
+	make -C src CXXFLAGS="$(CXXFLAGS)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS) -I../include" LDFLAGS="$(LDFLAGS) -L../src"
 
 clients:
-	make -C clients CPPFLAGS="$(CPPFLAGS) -I../include" LDFLAGS="$(LDFLAGS) -L../src"
+	make -C clients CXXFLAGS="$(CXXFLAGS)" CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS) -I../include" LDFLAGS="$(LDFLAGS) -L../src"
 
 doc:
 	make -C doc
