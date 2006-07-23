@@ -7,7 +7,9 @@ Introduction
 
 This package is for programmers who want to write their own version of the
 famous little puzzle game.  (If you think you know the game from soup to nuts
-and it's boring, do read on)
+and it's boring, do read on).  Building libmines requires a somewhat Unix-like
+system and the GNU version of "make"--it may be installed on your system as
+"gmake".
 
 Everybody's got their own version of Minesweeper.  All of them are essentially
 the same, with different user interfaces--often just so they can use different
@@ -110,6 +112,11 @@ non-volatile memory.
 
 To start using libmines in C++, take a look at the source files with names
 ending in ".hxx".  These headers define the C++ API.  The C interface is defined
-in a header called c_abi.h.  All of these are commented in a format suitable for
-auto-documentation tools like Doxygen.
+in a header called c_abi.h.
+
+For more easily readable documentation on how to use libmines in your own
+program, see the documentation in the "doc" directory.  If you would like to
+have this documentation generated in other formats such as LaTeX, ensure that
+the documentation extractor "doxygen" is installed on your system; edit the
+configuration file doc/Doxyfile accordingly, then run "make".
 
