@@ -231,7 +231,7 @@ int main(void)
 
     printf("<p>Moves: %d.  Fields to go: %d</p>\n",
 	mines_moves(F), mines_togo(F));
-    printf("<form action=\"%s\" method=\"GET\"><table>", scriptname);
+    printf("<form action=\"%s\" method=\"GET\"><tt><table>", scriptname);
     urlhead = sprintf(url, "<td><a href=\"%s?game=%s&atr=", scriptname, id);
     for (r=-1; r<=rows; ++r)
     {
@@ -246,7 +246,7 @@ int main(void)
       }
       puts("</tr>");
     }
-    puts("</form></table>");
+    puts("</table></tt></form>");
 
     bytes = mines_save(F,saved);
     set_filename(filename, id);
