@@ -19,6 +19,17 @@ header[] =
   "<head>"
   "<meta http-equiv=\"Content-Type\" content=\"text/xhtml+xml; charset=utf-8\" />\n"
   "<title>Minesweeper</title>"
+  "<style type=\"text/css\">"
+  "td {"
+  "padding: 0;"
+  "}\n"
+  "a {"
+  "text-decoration: none;"
+  "}\n"
+  "a:hover {"
+  "background-color: #808080;"
+  "}\n"
+  "</style>"
   "</head>"
   "<body>\n",
 toolarge[] = "<p><em>Playing field too large.  Try something smaller!</em></p>",
