@@ -26,9 +26,17 @@ Suite 330, Boston, MA  02111-1307  USA
 /// Coordinates of a patch of sea
 struct Coords
 {
+  /// Location's "y coordinate"
   int row;
+  /// Location's "x coordinate"
   int col;
+  /// Coordinates pair of square at given row and column
   Coords(int Row, int Col) : row(Row), col(Col) {}
+  /// Total-order comparison for sorting purposes
+  /** Compares locations of two squares.  Although it's not essential, this is
+   * done in the same way that addresses of elements in a two-dimensional C
+   * array compare.
+   */
   bool operator<(const Coords &rhs) const throw ()
   	{ return (rhs.row < row) || (rhs.row==row && rhs.col<col); }
 };
@@ -37,9 +45,13 @@ struct Coords
 /// Exception thrown when a mine is hit
 struct Boom
 {
+  /// Coordinates of field touched in fatal move
   Coords position;
+  /// Number of moves made, including the fatal one
   int moves;
+  /// Was the field in question actually mined?
   bool mined;
+  /// Compose "you die" information to be thrown as exception
   Boom(Coords pos, int mov, bool mine) : position(pos), moves(mov), mined(mine)
 	{}
 };
@@ -77,6 +89,8 @@ public:
   /** The specified amount of "intelligence" is recursively applied in revealing
    * surrounding patches whose state becomes obvious.  Boom is thrown if the
    * given patch is actually mined.
+   * @param row "y coordinate" of field
+   * @param col "x coordinate" of field
    * @param changes will receive a list of all patches revealed by this move
    * @param as_mine indicates whether user thinks this patch is mined
    */
@@ -98,7 +112,9 @@ public:
    */
   char status_at(int row, int col) const;
 
+  /// Number of rows making up this Lake
   const int rows() const throw () { return m_rows; }
+  /// Number of columns making up this Lake
   const int cols() const throw () { return m_cols; }
 
   /// Maximum number of bytes required to save this game
