@@ -26,6 +26,13 @@ extern "C"
 {
 #endif
 
+/// Type used to refer to a playing field in the C API.
+/** What's actually in a Minefield doesn't matter while using the C API; use the
+ * provided functions instead.
+ *
+ * Since the underlying data structure is really a C++ class, it would be
+ * technically difficult to access it directly anyway.
+ */
 typedef void Minefield;
 
 /** @brief Create minefield of given size.  Clean up with mines_close() later!
