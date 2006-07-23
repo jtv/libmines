@@ -17,7 +17,9 @@ libmines; if not, write to the Free Software Foundation, Inc., 59 Temple Place,
 Suite 330, Boston, MA  02111-1307  USA
 */
 
-// This file defines the native C++ API to libmines
+/** @addtogroup CXXAPI Native C++ API to libmines
+ */
+//@{
 
 #include <set>
 
@@ -173,4 +175,6 @@ private:
   Lake(const Lake &);
   const Lake &operator=(const Lake &);
 };
+
+//@}
 
