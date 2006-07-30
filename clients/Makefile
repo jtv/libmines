@@ -9,6 +9,7 @@ LOADLIBES += -lmines -lstdc++
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
 all: $(DELIVERABLES)
+	for i in $(DELIVERABLES) ; do strip "$$i" ; done
 
 clean:
 	$(RM) $(OBJS) mines.savedgame
@@ -16,8 +17,6 @@ clean:
 distclean: clean
 	$(RM) $(DELIVERABLES)
 
-
-ui_web: ui_web.o
 
 .PHONY: all clean distclean
 
