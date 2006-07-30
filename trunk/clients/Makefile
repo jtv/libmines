@@ -3,10 +3,7 @@
 OBJS=ui_cli.o ui_web.o
 DELIVERABLES=ui_cli ui_web
 
-LOADLIBES += -lmines
-
-# Ensure that standard C++ libraries are linked in, even in C...
-CC=$(CXX)
+LOADLIBES += -lmines -lstdc++
 
 %.o: %.cxx
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
@@ -19,6 +16,8 @@ clean:
 distclean: clean
 	$(RM) $(DELIVERABLES)
 
+
+ui_web: ui_web.o
 
 .PHONY: all clean distclean
 
