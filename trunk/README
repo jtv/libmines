@@ -1,4 +1,4 @@
-libmines - http://thaiopensource.org/development/mines/
+libmines - http://pqxx.org/development/mines/
 
 Welcome to libmines, a reusable library for building Minesweeper games.
 
@@ -35,8 +35,7 @@ the game!
 A very basic text-based command line client is included, which is meant mostly
 for testing.  But there's also a simple CGI program: set up your web server to
 provide access to it, and you can play the game in your browser through the
-Internet.  An example is running on thaiopensource.org--see the main development
-page.
+Internet.  An example is running on pqxx.org--see the main development page.
 
 Those sample user interfaces aren't great, so here's your chance.  Perhaps you
 can be the one to write a much better one.  Or be the first to build an online
