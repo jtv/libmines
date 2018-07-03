@@ -1,4 +1,4 @@
-libmines - http://pqxx.org/development/mines/
+libmines - https://github.com/jtv/libmines
 
 Welcome to libmines, a reusable library for building Minesweeper games.
 
