@@ -1,7 +1,7 @@
 /*
 This file is part of libmines.
 
-Copyright (C) 2005, Jeroen T. Vermeulen <jtv@xs4all.nl>
+Copyright (C) 2005-2022, Jeroen T. Vermeulen.
 
 libmines is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
